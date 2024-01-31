@@ -57,8 +57,13 @@ struct LongPressWithFeedback: ViewModifier {
 }
 
 extension View {
+    @ViewBuilder
     func longPressWithFeedback(action: @escaping () -> Void) -> some View {
-        modifier(LongPressWithFeedback(action: action))
+        if !ProcessInfo.processInfo.isiOSAppOnMac {
+            modifier(LongPressWithFeedback(action: action))
+        } else {
+            self
+        }
     }
 }
 

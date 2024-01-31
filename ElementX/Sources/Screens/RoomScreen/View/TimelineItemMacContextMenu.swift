@@ -27,8 +27,32 @@ struct TimelineItemMacContextMenu: View {
             if let menuActions = actionProvider?(item.id) {
                 Section {
                     if item.isReactable {
-                        Button { send(.react) } label: {
-                            TimelineItemMenuAction.react.label
+                        if #available(iOS 17.0, *) {
+                            ControlGroup {
+                                Button { send(.toggleReaction(key: "👍")) } label: {
+                                    Image(systemSymbol: .handThumbsup)
+                                }
+                                Button { send(.toggleReaction(key: "👎")) } label: {
+                                    Image(systemSymbol: .handThumbsdown)
+                                }
+                                Button { send(.toggleReaction(key: "🔥")) } label: {
+                                    Image(systemSymbol: .flame)
+                                }
+                                Button { send(.toggleReaction(key: "❤️")) } label: {
+                                    Image(systemSymbol: .heart)
+                                }
+                                Button { send(.toggleReaction(key: "👏")) } label: {
+                                    Image(systemSymbol: .handsClap)
+                                }
+                                Button { send(.react) } label: {
+                                    Image(asset: Asset.Images.addReaction)
+                                }
+                            }
+                            .controlGroupStyle(.palette)
+                        } else {
+                            Button { send(.react) } label: {
+                                TimelineItemMenuAction.react.label
+                            }
                         }
                     }
                     

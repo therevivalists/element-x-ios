@@ -52,6 +52,7 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
     case retryDecryption(sessionID: String)
     case report
     case react
+    case toggleReaction(key: String)
     case endPoll(pollStartID: String)
     
     var id: Self { self }
@@ -119,6 +120,9 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
         case .report:
             Label(L10n.actionReportContent, icon: \.chatProblem)
         case .react:
+            Label(L10n.actionReact, iconAsset: Asset.Images.addReaction)
+        case .toggleReaction:
+            // Unused label - manually created in TimelineItemMacContextMenu.
             Label(L10n.actionReact, iconAsset: Asset.Images.addReaction)
         case .endPoll:
             Label(L10n.actionEndPoll, iconAsset: Asset.Images.pollsEnd)
