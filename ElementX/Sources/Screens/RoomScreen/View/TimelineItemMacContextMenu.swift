@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+import SFSafeSymbols
 import SwiftUI
 
 /// The contents of the context menu shown when right clicking an item in the timeline on a Mac
@@ -28,21 +29,22 @@ struct TimelineItemMacContextMenu: View {
                 Section {
                     if item.isReactable {
                         if #available(iOS 17.0, *) {
+                            let reactions = (item as? EventBasedTimelineItemProtocol)?.properties.reactions ?? []
                             ControlGroup {
-                                Button { send(.toggleReaction(key: "👍")) } label: {
-                                    Image(systemSymbol: .handThumbsup)
+                                ReactionToggle(key: "👍", symbol: .handThumbsup, reactions: reactions) {
+                                    send(.toggleReaction(key: $0))
                                 }
-                                Button { send(.toggleReaction(key: "👎")) } label: {
-                                    Image(systemSymbol: .handThumbsdown)
+                                ReactionToggle(key: "👎", symbol: .handThumbsdown, reactions: reactions) {
+                                    send(.toggleReaction(key: $0))
                                 }
-                                Button { send(.toggleReaction(key: "🔥")) } label: {
-                                    Image(systemSymbol: .flame)
+                                ReactionToggle(key: "🔥", symbol: .flame, reactions: reactions) {
+                                    send(.toggleReaction(key: $0))
                                 }
-                                Button { send(.toggleReaction(key: "❤️")) } label: {
-                                    Image(systemSymbol: .heart)
+                                ReactionToggle(key: "❤️", symbol: .heart, reactions: reactions) {
+                                    send(.toggleReaction(key: $0))
                                 }
-                                Button { send(.toggleReaction(key: "👏")) } label: {
-                                    Image(systemSymbol: .handsClap)
+                                ReactionToggle(key: "👏", symbol: .handsClap, reactions: reactions) {
+                                    send(.toggleReaction(key: $0))
                                 }
                                 Button { send(.react) } label: {
                                     Image(asset: Asset.Images.addReaction)
@@ -75,6 +77,25 @@ struct TimelineItemMacContextMenu: View {
                     }
                 }
             }
+        }
+    }
+}
+
+/// A button that acts as a toggle for reacting to a message.
+private struct ReactionToggle: View {
+    let key: String
+    let symbol: SFSymbol
+    let reactions: [AggregatedReaction]
+    let action: (String) -> Void
+    
+    var isOn: Bool {
+        reactions.contains { $0.key == key && $0.isHighlighted }
+    }
+    
+    var body: some View {
+        Button { action(key) } label: {
+            Image(systemSymbol: symbol)
+                .symbolVariant(isOn ? .fill : .none)
         }
     }
 }
