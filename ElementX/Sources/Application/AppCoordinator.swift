@@ -334,9 +334,9 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
             }
         }
         
-        if oldVersion < Version(1, 6, 4) {
+        if oldVersion < Version(1, 6, 5) {
             RustTracing.deleteLogFiles()
-            MXLog.info("Migrating to v1.6.4, log files have been wiped")
+            MXLog.info("Migrating to v1.6.5, log files have been wiped")
         }
     }
     
