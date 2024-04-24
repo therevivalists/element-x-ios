@@ -10333,6 +10333,11 @@ class SessionVerificationControllerProxyMock: SessionVerificationControllerProxy
     }
 }
 class TimelineProxyMock: TimelineProxyProtocol {
+    var roomID: String {
+        get { return underlyingRoomID }
+        set(value) { underlyingRoomID = value }
+    }
+    var underlyingRoomID: String!
     var actions: AnyPublisher<TimelineProxyAction, Never> {
         get { return underlyingActions }
         set(value) { underlyingActions = value }

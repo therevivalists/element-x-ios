@@ -1066,9 +1066,12 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
         
         let stackCoordinator = NavigationStackCoordinator()
         
-        let parameters = MessageForwardingScreenCoordinatorParameters(roomSummaryProvider: roomSummaryProvider,
+        let parameters = MessageForwardingScreenCoordinatorParameters(sourceEventID: eventID,
+                                                                      sourceTimeline: roomProxy.timeline, // won't necessarily be correct with detached timelines.
+                                                                      clientProxy: userSession.clientProxy,
+                                                                      roomSummaryProvider: roomSummaryProvider,
                                                                       mediaProvider: userSession.mediaProvider,
-                                                                      sourceRoomID: roomProxy.id)
+                                                                      userIndicatorController: userIndicatorController)
         let coordinator = MessageForwardingScreenCoordinator(parameters: parameters)
         
         coordinator.actions.sink { [weak self] action in
@@ -1077,12 +1080,10 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
             switch action {
             case .dismiss:
                 navigationStackCoordinator.setSheetCoordinator(nil)
-            case .send(let roomID):
+            case .sent(let roomID):
                 navigationStackCoordinator.setSheetCoordinator(nil)
-                
-                Task {
-                    await self.forward(eventID: eventID, toRoomID: roomID)
-                }
+                // Timelines are cached - the local echo will be visible when fetching the room by its ID.
+                stateMachine.tryEvent(.startChildFlow(roomID: roomID))
             }
         }
         .store(in: &cancellables)
@@ -1092,30 +1093,6 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
         navigationStackCoordinator.setSheetCoordinator(stackCoordinator) { [weak self] in
             self?.stateMachine.tryEvent(.dismissMessageForwarding)
         }
-    }
-    
-    private func forward(eventID: String, toRoomID roomID: String) async {
-        guard let messageEventContent = roomProxy.timeline.messageEventContent(for: eventID) else {
-            MXLog.error("Failed retrieving forwarded message event content for eventID: \(eventID)")
-            userIndicatorController.submitIndicator(UserIndicator(title: L10n.errorUnknown))
-            return
-        }
-        
-        guard let targetRoomProxy = await userSession.clientProxy.roomForIdentifier(roomID) else {
-            MXLog.error("Failed retrieving room to forward to with id: \(roomID)")
-            userIndicatorController.submitIndicator(UserIndicator(title: L10n.errorUnknown))
-            return
-        }
-        
-        if case .failure(let error) = await targetRoomProxy.timeline.sendMessageEventContent(messageEventContent) {
-            MXLog.error("Failed forwarding message with error: \(error)")
-            userIndicatorController.submitIndicator(UserIndicator(title: L10n.errorUnknown))
-            return
-        }
-        
-        // We don't need to worry about passing in the room proxy as timelines are
-        // cached. The local echo will be visible when fetching the room by its ID.
-        stateMachine.tryEvent(.startChildFlow(roomID: roomID))
     }
     
     private func presentNotificationSettingsScreen() {

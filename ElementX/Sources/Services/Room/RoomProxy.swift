@@ -61,7 +61,7 @@ class RoomProxy: RoomProxyProtocol {
         self.room = room
         
         do {
-            timeline = try await TimelineProxy(timeline: room.timeline())
+            timeline = try await TimelineProxy(timeline: room.timeline(), roomID: room.id())
         } catch {
             MXLog.error("Failed creating timeline with error: \(error)")
             return nil

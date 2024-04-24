@@ -20,8 +20,11 @@ import SwiftUI
 typealias MessageForwardingScreenViewModelType = StateStoreViewModel<MessageForwardingScreenViewState, MessageForwardingScreenViewAction>
 
 class MessageForwardingScreenViewModel: MessageForwardingScreenViewModelType, MessageForwardingScreenViewModelProtocol {
-    private let roomSummaryProvider: RoomSummaryProviderProtocol?
-    private let sourceRoomID: String
+    private let sourceEventID: String
+    private let sourceTimeline: TimelineProxyProtocol
+    private let clientProxy: ClientProxyProtocol
+    private let roomSummaryProvider: RoomSummaryProviderProtocol
+    private let userIndicatorController: UserIndicatorControllerProtocol
     
     private var actionsSubject: PassthroughSubject<MessageForwardingScreenViewModelAction, Never> = .init()
     
@@ -29,11 +32,17 @@ class MessageForwardingScreenViewModel: MessageForwardingScreenViewModelType, Me
         actionsSubject.eraseToAnyPublisher()
     }
 
-    init(roomSummaryProvider: RoomSummaryProviderProtocol,
-         mediaProvider: MediaProviderProtocol,
-         sourceRoomID: String) {
+    init(sourceEventID: String,
+         sourceTimeline: TimelineProxyProtocol,
+         clientProxy: ClientProxyProtocol,
+         roomSummaryProvider: RoomSummaryProviderProtocol,
+         userIndicatorController: UserIndicatorControllerProtocol,
+         mediaProvider: MediaProviderProtocol) {
+        self.sourceEventID = sourceEventID
+        self.sourceTimeline = sourceTimeline
+        self.clientProxy = clientProxy
         self.roomSummaryProvider = roomSummaryProvider
-        self.sourceRoomID = sourceRoomID
+        self.userIndicatorController = userIndicatorController
         
         super.init(initialViewState: MessageForwardingScreenViewState(), imageProvider: mediaProvider)
         
@@ -49,7 +58,7 @@ class MessageForwardingScreenViewModel: MessageForwardingScreenViewModelType, Me
             .removeDuplicates()
             .sink { [weak self] searchQuery in
                 guard let self else { return }
-                self.roomSummaryProvider?.setFilter(.search(query: searchQuery))
+                self.roomSummaryProvider.setFilter(.search(query: searchQuery))
             }
             .store(in: &cancellables)
         
@@ -60,13 +69,9 @@ class MessageForwardingScreenViewModel: MessageForwardingScreenViewModelType, Me
         switch viewAction {
         case .cancel:
             actionsSubject.send(.dismiss)
-            roomSummaryProvider?.setFilter(.all(filters: []))
+            roomSummaryProvider.setFilter(.all(filters: []))
         case .send:
-            guard let roomID = state.selectedRoomID else {
-                fatalError()
-            }
-            
-            actionsSubject.send(.send(roomID: roomID))
+            Task { await forward() }
         case .selectRoom(let roomID):
             state.selectedRoomID = roomID
         case .reachedTop:
@@ -79,11 +84,6 @@ class MessageForwardingScreenViewModel: MessageForwardingScreenViewModelType, Me
     // MARK: - Private
     
     private func updateRooms() {
-        guard let roomSummaryProvider else {
-            MXLog.error("Room summary provider unavailable")
-            return
-        }
-        
         MXLog.verbose("Updating rooms")
         
         var rooms = [MessageForwardingRoom]()
@@ -93,7 +93,7 @@ class MessageForwardingScreenViewModel: MessageForwardingScreenViewModelType, Me
             case .empty, .invalidated:
                 continue
             case .filled(let details):
-                if details.id == sourceRoomID {
+                if details.id == sourceTimeline.roomID {
                     continue
                 }
                 
@@ -114,10 +114,6 @@ class MessageForwardingScreenViewModel: MessageForwardingScreenViewModelType, Me
     /// we just need the respective bounds to be there to trigger a next page load or
     /// a reset to just one page
     private func updateVisibleRange(edge: UIRectEdge) {
-        guard let roomSummaryProvider else {
-            return
-        }
-        
         switch edge {
         case .top:
             roomSummaryProvider.updateVisibleRange(0..<0)
@@ -127,5 +123,32 @@ class MessageForwardingScreenViewModel: MessageForwardingScreenViewModelType, Me
         default:
             break
         }
+    }
+    
+    private func forward() async {
+        guard let roomID = state.selectedRoomID else {
+            fatalError()
+        }
+        
+        guard let messageEventContent = sourceTimeline.messageEventContent(for: sourceEventID) else {
+            MXLog.error("Failed retrieving forwarded message event content for eventID: \(sourceEventID)")
+            userIndicatorController.submitIndicator(UserIndicator(title: L10n.errorUnknown))
+            return
+        }
+        
+        guard let targetRoomProxy = await clientProxy.roomForIdentifier(roomID) else {
+            MXLog.error("Failed retrieving room to forward to with id: \(roomID)")
+            userIndicatorController.submitIndicator(UserIndicator(title: L10n.errorUnknown))
+            return
+        }
+        
+        if case .failure(let error) = await targetRoomProxy.timeline.sendMessageEventContent(messageEventContent) {
+            MXLog.error("Failed forwarding message with error: \(error)")
+            userIndicatorController.submitIndicator(UserIndicator(title: L10n.errorUnknown))
+            return
+        }
+        
+        // Timelines are cached - the local echo will be visible when fetching the room by its ID.
+        actionsSubject.send(.sent(roomID: roomID))
     }
 }

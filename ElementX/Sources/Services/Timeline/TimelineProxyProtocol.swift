@@ -39,6 +39,8 @@ enum TimelineProxyAction {
 
 // sourcery: AutoMockable
 protocol TimelineProxyProtocol {
+    var roomID: String { get }
+    
     var actions: AnyPublisher<TimelineProxyAction, Never> { get }
     
     var timelineProvider: RoomTimelineProviderProtocol { get }

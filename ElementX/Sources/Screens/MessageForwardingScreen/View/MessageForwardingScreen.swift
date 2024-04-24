@@ -104,9 +104,12 @@ private struct MessageForwardingListRow: View {
 struct MessageForwardingScreen_Previews: PreviewProvider, TestablePreview {
     static var previews: some View {
         let summaryProvider = RoomSummaryProviderMock(.init(state: .loaded(.mockRooms)))
-        let viewModel = MessageForwardingScreenViewModel(roomSummaryProvider: summaryProvider,
-                                                         mediaProvider: MockMediaProvider(),
-                                                         sourceRoomID: "")
+        let viewModel = MessageForwardingScreenViewModel(sourceEventID: "",
+                                                         sourceTimeline: TimelineProxyMock(),
+                                                         clientProxy: ClientProxyMock(),
+                                                         roomSummaryProvider: summaryProvider,
+                                                         userIndicatorController: UserIndicatorControllerMock(),
+                                                         mediaProvider: MockMediaProvider())
         
         NavigationStack {
             MessageForwardingScreen(context: viewModel.context)

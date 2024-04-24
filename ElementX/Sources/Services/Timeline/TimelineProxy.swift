@@ -19,6 +19,7 @@ import Foundation
 import MatrixRustSDK
 
 final class TimelineProxy: TimelineProxyProtocol {
+    let roomID: String
     private let timeline: Timeline
     
     private let lowPriorityDispatchQueue = DispatchQueue(label: "io.element.elementx.roomproxy.low_priority", qos: .utility)
@@ -51,7 +52,8 @@ final class TimelineProxy: TimelineProxyProtocol {
         roomTimelineObservationToken?.cancel()
     }
     
-    init(timeline: Timeline) {
+    init(timeline: Timeline, roomID: String) {
+        self.roomID = roomID
         self.timeline = timeline
     }
     

@@ -30,23 +30,25 @@ struct RoomProxyMockConfiguration {
     var hasOngoingCall = true
     var canonicalAlias: String?
     
-    var timeline = {
-        let mock = TimelineProxyMock()
-        mock.underlyingActions = Empty(completeImmediately: false).eraseToAnyPublisher()
-        mock.timelineStartReached = false
-        
-        let timelineProvider = RoomTimelineProviderMock()
-        timelineProvider.underlyingMembershipChangePublisher = PassthroughSubject().eraseToAnyPublisher()
-        mock.underlyingTimelineProvider = timelineProvider
-        return mock
-    }()
-    
     var members: [RoomMemberProxyMock] = .allMembers
     var ownUserID = RoomMemberProxyMock.mockMe.userID
     
     var canUserInvite = true
     var canUserTriggerRoomNotification = false
     var canUserJoinCall = true
+    
+    func makeTimeline() -> TimelineProxyMock {
+        let mock = TimelineProxyMock()
+        mock.roomID = id
+        mock.underlyingActions = Empty(completeImmediately: false).eraseToAnyPublisher()
+        mock.timelineStartReached = false
+        mock.sendMessageEventContentReturnValue = .success(())
+        
+        let timelineProvider = RoomTimelineProviderMock()
+        timelineProvider.underlyingMembershipChangePublisher = PassthroughSubject().eraseToAnyPublisher()
+        mock.underlyingTimelineProvider = timelineProvider
+        return mock
+    }
 }
 
 enum RoomProxyMockError: Error {
@@ -69,7 +71,7 @@ extension RoomProxyMock {
         hasOngoingCall = configuration.hasOngoingCall
         canonicalAlias = configuration.canonicalAlias
         
-        timeline = configuration.timeline
+        timeline = configuration.makeTimeline()
         
         ownUserID = configuration.ownUserID
         membership = .joined

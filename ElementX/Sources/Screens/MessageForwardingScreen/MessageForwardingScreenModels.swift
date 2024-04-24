@@ -18,7 +18,7 @@ import Foundation
 
 enum MessageForwardingScreenViewModelAction {
     case dismiss
-    case send(roomID: String)
+    case sent(roomID: String)
 }
 
 struct MessageForwardingScreenViewState: BindableState {
