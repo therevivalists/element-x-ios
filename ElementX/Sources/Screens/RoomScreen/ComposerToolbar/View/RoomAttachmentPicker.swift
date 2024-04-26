@@ -76,16 +76,14 @@ struct RoomAttachmentPicker: View {
                     .labelStyle(.menuSheet)
             }
             .accessibilityIdentifier(A11yIdentifiers.roomScreen.attachmentPickerPoll)
-
-            if ServiceLocator.shared.settings.richTextEditorEnabled {
-                Button {
-                    context.send(viewAction: .enableTextFormatting)
-                } label: {
-                    Label(L10n.screenRoomAttachmentTextFormatting, icon: \.textFormatting)
-                        .labelStyle(.menuSheet)
-                }
-                .accessibilityIdentifier(A11yIdentifiers.roomScreen.attachmentPickerTextFormatting)
+            
+            Button {
+                context.send(viewAction: .enableTextFormatting)
+            } label: {
+                Label(L10n.screenRoomAttachmentTextFormatting, icon: \.textFormatting)
+                    .labelStyle(.menuSheet)
             }
+            .accessibilityIdentifier(A11yIdentifiers.roomScreen.attachmentPickerTextFormatting)
         }
     }
 }

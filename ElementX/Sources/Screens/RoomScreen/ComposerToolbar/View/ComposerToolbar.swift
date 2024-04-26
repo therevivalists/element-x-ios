@@ -165,7 +165,8 @@ struct ComposerToolbar: View {
         MessageComposer(plainComposerText: $context.plainComposerText,
                         composerView: composerView,
                         mode: context.viewState.composerMode,
-                        showResizeGrabber: context.viewState.bindings.composerActionsEnabled,
+                        composerActionsEnabled: context.composerActionsEnabled,
+                        showResizeGrabber: context.composerActionsEnabled,
                         isExpanded: $context.composerExpanded) {
             context.send(viewAction: .sendMessage)
         } pasteAction: { provider in
@@ -188,6 +189,9 @@ struct ComposerToolbar: View {
         }
         .onChange(of: context.plainComposerText) { _ in
             context.send(viewAction: .plainComposerTextChanged)
+        }
+        .onChange(of: context.composerActionsEnabled) { _ in
+            context.send(viewAction: .didToggleFormattingOptions)
         }
         .onAppear {
             composerFocused = context.composerFocused
